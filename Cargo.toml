@@ -1,0 +1,13 @@
+[package]
+name = "typeface"
+version = "0.0.1"
+edition = "2021"
+license = "Apache-2.0/MIT"
+authors = ["Ivan Ukhov <ivan.ukhov@gmail.com>"]
+description = "The package provides a foundation for parsing fonts."
+documentation = "https://docs.rs/typeface"
+homepage = "https://github.com/bodoni/typeface"
+repository = "https://github.com/bodoni/typeface"
+readme = "README.md"
+categories = ["parsing"]
+keywords = ["font", "typeface", "typography"]
