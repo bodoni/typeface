@@ -47,10 +47,52 @@ macro_rules! dereference {
 macro_rules! enumeration {
     ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
         $($value:expr => $variant:ident,)*
+        _ => $other:ident,
     }) => (
         $(#[$attribute])*
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        #[repr(C)]
         pub enum $name {
+            #[default]
+            $($variant,)*
+            $other($kind),
+        }
+
+        impl From<$name> for $kind {
+            fn from(value: $name) -> $kind {
+                match value {
+                    $($name::$variant => $value,)*
+                    $name::$other(value) => value,
+                }
+            }
+        }
+
+        impl From<$kind> for $name {
+            fn from(value: $kind) -> $name {
+                match value {
+                    $($value => $name::$variant,)*
+                    value => $name::$other(value),
+                }
+            }
+        }
+
+        impl ::typeface::Value for $name {
+            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+                match tape.take::<$kind>()? {
+                    $($value => Ok($name::$variant),)*
+                    value => Ok($name::$other(value)),
+                }
+            }
+        }
+    );
+    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+        $($value:expr => $variant:ident,)*
+    }) => (
+        $(#[$attribute])*
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        #[repr(C)]
+        pub enum $name {
+            #[default]
             $($variant = $value,)*
         }
 
@@ -68,11 +110,66 @@ macro_rules! enumeration {
             fn try_from(value: $kind) -> ::typeface::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
-                    _ => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
                 }
             }
         }
-    )
+
+        impl ::typeface::Value for $name {
+            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+                match tape.take::<$kind>()? {
+                    $($value => Ok($name::$variant),)*
+                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                }
+            }
+        }
+    );
+    ($(#[$attribute:meta])* pub $name:ident($kind:tt) {
+        $($value:expr => $variant:ident ($string:expr),)*
+    }) => (
+        $(#[$attribute])*
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub enum $name {
+            #[default]
+            $($variant = $value,)*
+        }
+
+        impl From<$name> for $kind {
+            #[inline]
+            fn from(value: $name) -> Self {
+                value as $kind
+            }
+        }
+
+        impl From<$name> for &'static str {
+            #[inline]
+            fn from(value: $name) -> Self {
+                match value {
+                    $($name::$variant => $string,)*
+                }
+            }
+        }
+
+        impl TryFrom<$kind> for $name {
+            type Error = ::typeface::Error;
+
+            fn try_from(value: $kind) -> ::typeface::Result<$name> {
+                match value {
+                    $($value => Ok($name::$variant),)*
+                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                }
+            }
+        }
+
+        impl ::typeface::Value for $name {
+            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+                match tape.take::<$kind>()? {
+                    $($value => Ok($name::$variant),)*
+                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                }
+            }
+        }
+    );
 }
 
 /// Implement flags.
