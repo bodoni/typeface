@@ -1,8 +1,8 @@
 #[doc(hidden)]
 #[macro_export]
-macro_rules! deref {
+macro_rules! dereference {
     (@itemize $($one:item)*) => ($($one)*);
-    ($name:ident::$field:tt => $target:ty) => (deref! {
+    ($name:ident::$field:tt => $target:ty) => (dereference! {
         @itemize
 
         impl ::std::ops::Deref for $name {
@@ -21,7 +21,7 @@ macro_rules! deref {
             }
         }
     });
-    ($name:ident<$life:tt>::$field:tt => $target:ty) => (deref! {
+    ($name:ident<$life:tt>::$field:tt => $target:ty) => (dereference! {
         @itemize
 
         impl<$life> ::std::ops::Deref for $name<$life> {
@@ -42,11 +42,44 @@ macro_rules! deref {
     });
 }
 
+/// Implement an enumeration.
+#[macro_export]
+macro_rules! enumeration {
+    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+        $($value:expr => $variant:ident,)*
+    }) => (
+        $(#[$attribute])*
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub enum $name {
+            $($variant = $value,)*
+        }
+
+        impl From<$name> for $kind {
+            #[inline]
+            fn from(value: $name) -> $kind {
+                value as $kind
+            }
+        }
+
+        impl TryFrom<$kind> for $name {
+            type Error = ::typeface::Error;
+
+            #[inline]
+            fn try_from(value: $kind) -> ::typeface::Result<$name> {
+                match value {
+                    $($value => Ok($name::$variant),)*
+                    _ => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                }
+            }
+        }
+    )
+}
+
 /// Implement flags.
 #[macro_export]
 macro_rules! flags {
-    ($(#[$attribute:meta])* pub $name:ident($kind:ident) {
-        $($mask:expr => $method:ident,)*
+    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+        $($value:expr => $variant:ident,)*
     }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Default, Eq, PartialEq)]
@@ -55,8 +88,8 @@ macro_rules! flags {
         impl $name {
             $(
                 #[inline(always)]
-                pub fn $method(&self) -> bool {
-                    self.0 & $mask > 0
+                pub fn $variant(&self) -> bool {
+                    self.0 & $value > 0
                 }
             )*
         }
@@ -67,7 +100,7 @@ macro_rules! flags {
                 let value = $name(tape.take::<$kind>()?);
                 if cfg!(not(feature = "ignore-invalid-flags")) {
                     if value.is_invalid() {
-                        raise!("found malformed flags with value {}", value);
+                        raise!(concat!("found malformed flags of type ", stringify!($name), " with value {}"), value);
                     }
                 }
                 Ok(value)
@@ -271,7 +304,7 @@ macro_rules! table {
      [$value:block]) => ({
         let value = $tape.take()?;
         if value != $value {
-            raise!("found a malformed or unknown table");
+            raise!(concat!("found a malformed table of type ", stringify!($name)));
         }
         value
     });
