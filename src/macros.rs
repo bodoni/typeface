@@ -1,50 +1,6 @@
-#[doc(hidden)]
+/// Implement choices.
 #[macro_export]
-macro_rules! dereference {
-    (@itemize $($one:item)*) => ($($one)*);
-    ($name:ident::$field:tt => $target:ty) => (dereference! {
-        @itemize
-
-        impl ::std::ops::Deref for $name {
-            type Target = $target;
-
-            #[inline]
-            fn deref(&self) -> &Self::Target {
-                &self.$field
-            }
-        }
-
-        impl ::std::ops::DerefMut for $name {
-            #[inline]
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.$field
-            }
-        }
-    });
-    ($name:ident<$life:tt>::$field:tt => $target:ty) => (dereference! {
-        @itemize
-
-        impl<$life> ::std::ops::Deref for $name<$life> {
-            type Target = $target;
-
-            #[inline]
-            fn deref(&self) -> &Self::Target {
-                &self.$field
-            }
-        }
-
-        impl<$life> ::std::ops::DerefMut for $name<$life> {
-            #[inline]
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.$field
-            }
-        }
-    });
-}
-
-/// Implement an enumeration.
-#[macro_export]
-macro_rules! enumeration {
+macro_rules! choices {
     ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
         $($value:expr => $variant:ident,)*
         _ => $other:ident,
@@ -110,7 +66,7 @@ macro_rules! enumeration {
             fn try_from(value: $kind) -> ::typeface::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
                 }
             }
         }
@@ -119,7 +75,7 @@ macro_rules! enumeration {
             fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
                 }
             }
         }
@@ -156,7 +112,7 @@ macro_rules! enumeration {
             fn try_from(value: $kind) -> ::typeface::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
                 }
             }
         }
@@ -165,11 +121,55 @@ macro_rules! enumeration {
             fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed enumeration of type ", stringify!($name), " with value {}"), value),
+                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
                 }
             }
         }
     );
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! dereference {
+    (@itemize $($one:item)*) => ($($one)*);
+    ($name:ident::$field:tt => $target:ty) => (dereference! {
+        @itemize
+
+        impl ::std::ops::Deref for $name {
+            type Target = $target;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                &self.$field
+            }
+        }
+
+        impl ::std::ops::DerefMut for $name {
+            #[inline]
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.$field
+            }
+        }
+    });
+    ($name:ident<$life:tt>::$field:tt => $target:ty) => (dereference! {
+        @itemize
+
+        impl<$life> ::std::ops::Deref for $name<$life> {
+            type Target = $target;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                &self.$field
+            }
+        }
+
+        impl<$life> ::std::ops::DerefMut for $name<$life> {
+            #[inline]
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.$field
+            }
+        }
+    });
 }
 
 /// Implement flags.
@@ -197,7 +197,7 @@ macro_rules! flags {
                 let value = $name(tape.take::<$kind>()?);
                 if cfg!(not(feature = "ignore-invalid-flags")) {
                     if value.is_invalid() {
-                        raise!(concat!("found malformed flags of type ", stringify!($name), " with value {}"), value);
+                        raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value);
                     }
                 }
                 Ok(value)
