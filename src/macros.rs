@@ -7,7 +7,6 @@ macro_rules! choices {
     }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
-        #[repr(C)]
         pub enum $name {
             #[default]
             $($variant,)*
@@ -46,7 +45,6 @@ macro_rules! choices {
     }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
-        #[repr(C)]
         pub enum $name {
             #[default]
             $($variant = $value,)*
