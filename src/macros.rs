@@ -79,7 +79,7 @@ macro_rules! choices {
         }
     );
     ($(#[$attribute:meta])* pub $name:ident($kind:tt) {
-        $($value:expr => $variant:ident ($string:expr),)*
+        $($value:expr => $variant:ident($string:expr),)*
     }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
