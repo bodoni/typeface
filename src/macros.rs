@@ -176,6 +176,12 @@ macro_rules! flags {
     ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
+        flags!(@base $(#[$attribute])* pub $name($kind) { $($value => $variant,)* });
+        flags!(@read pub $name($kind));
+    );
+    (@base $(#[$attribute:meta])* pub $name:ident($kind:ty) {
+        $($value:expr => $variant:ident,)*
+    }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Default, Eq, PartialEq)]
         pub struct $name(pub $kind);
@@ -187,19 +193,6 @@ macro_rules! flags {
                     self.0 & $value > 0
                 }
             )*
-        }
-
-        impl ::typeface::Value for $name {
-            #[inline(always)]
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
-                let value = $name(tape.take::<$kind>()?);
-                if cfg!(not(feature = "ignore-invalid-flags")) {
-                    if value.is_invalid() {
-                        raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value);
-                    }
-                }
-                Ok(value)
-            }
         }
 
         impl ::std::fmt::Debug for $name {
@@ -219,6 +212,18 @@ macro_rules! flags {
             #[inline(always)]
             fn from(flags: $name) -> $kind {
                 flags.0
+            }
+        }
+    );
+    (@read pub $name:ident($kind:ty)) => (
+        impl ::typeface::Value for $name {
+            #[inline]
+            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+                let value = $name(tape.take::<$kind>()?);
+                if value.is_invalid() {
+                    raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value);
+                }
+                Ok(value)
             }
         }
     );
