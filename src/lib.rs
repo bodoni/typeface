@@ -26,6 +26,7 @@ impl std::fmt::Display for ErrorWithSource {
 }
 
 impl std::error::Error for ErrorWithSource {
+    #[inline]
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(&self.source)
     }
