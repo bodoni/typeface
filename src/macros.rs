@@ -188,7 +188,7 @@ macro_rules! flags {
 
         impl $name {
             $(
-                #[inline(always)]
+                #[inline]
                 pub fn $variant(&self) -> bool {
                     self.0 & $value > 0
                 }
@@ -209,7 +209,7 @@ macro_rules! flags {
         }
 
         impl From<$name> for $kind {
-            #[inline(always)]
+            #[inline]
             fn from(flags: $name) -> $kind {
                 flags.0
             }
@@ -410,14 +410,14 @@ macro_rules! table {
     });
     (@read $name:ident, $this:ident, $tape:ident [] [$kind:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
-        #[inline(always)]
+        #[inline]
         fn read<T: ::typeface::Tape>($this_: &$name, $tape_: &mut T)
                                      -> ::typeface::Result<$kind> $body
         read(&$this, $tape)?
     });
     (@read $name:ident, $this:ident, $tape:ident [$position:ident] [$kind:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
-        #[inline(always)]
+        #[inline]
         fn read<T: ::typeface::Tape>($this_: &$name, $tape_: &mut T, $position_: u64)
                                      -> ::typeface::Result<$kind> $body
         read(&$this, $tape, $position)?

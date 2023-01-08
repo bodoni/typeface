@@ -5,13 +5,13 @@ use crate::Result;
 /// A type that can read.
 pub trait Tape: Read + Seek + Sized {
     /// Read a value.
-    #[inline(always)]
+    #[inline]
     fn take<T: Value>(&mut self) -> Result<T> {
         Value::read(self)
     }
 
     /// Read a value given a parameter.
-    #[inline(always)]
+    #[inline]
     fn take_given<'l, T: Walue<'l>>(&mut self, parameter: T::Parameter) -> Result<T> {
         Walue::read(self, parameter)
     }
@@ -46,7 +46,7 @@ pub trait Tape: Read + Seek + Sized {
     }
 
     #[doc(hidden)]
-    #[inline(always)]
+    #[inline]
     fn take_bytes(&mut self, count: usize) -> Result<Vec<u8>> {
         let mut buffer = vec![0; count];
         self.read_exact(&mut buffer)?;
@@ -82,6 +82,7 @@ macro_rules! read(
 macro_rules! value {
     ([$kind:ident; $count:expr], 1) => {
         impl Value for [$kind; $count] {
+            #[inline]
             fn read<T: Tape>(tape: &mut T) -> Result<Self> {
                 Ok(read!(tape, $count))
             }
