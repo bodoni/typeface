@@ -110,6 +110,7 @@ value!(i8, 1);
 value!(u8, 1);
 value!(i16, 2);
 value!(u16, 2);
+value!(i32, 4);
 value!(u32, 4);
 value!(i64, 8);
 value!([u8; 3], 1);
