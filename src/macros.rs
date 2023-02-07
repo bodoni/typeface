@@ -375,6 +375,7 @@ macro_rules! table {
                 $({
                     let value = table!(@read $name, table, tape [] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
+                    #[allow(clippy::forget_copy)]
                     ::std::mem::forget(::std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
@@ -391,6 +392,7 @@ macro_rules! table {
                 $({
                     let value = table!(@read $name, table, tape [position] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
+                    #[allow(clippy::forget_copy)]
                     ::std::mem::forget(::std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
