@@ -31,7 +31,7 @@ pub trait Tape: Read + Seek + Sized {
     #[doc(hidden)]
     #[inline]
     fn position(&mut self) -> Result<u64> {
-        self.seek(SeekFrom::Current(0))
+        self.stream_position()
     }
 
     #[doc(hidden)]
@@ -75,6 +75,7 @@ macro_rules! read(
     ($tape:ident, $size:expr) => (unsafe {
         let mut buffer: [u8; $size] = ::std::mem::zeroed();
         ::std::io::Read::read_exact($tape, &mut buffer)?;
+        #[allow(clippy::useless_transmute)]
         ::std::mem::transmute(buffer)
     });
 );
