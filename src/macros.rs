@@ -392,7 +392,7 @@ macro_rules! table {
                 $({
                     let value = table!(@read $name, table, tape [position] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
-                    #[allow(clippy::forget_copy)]
+                    #[allow(clippy::forget_copy, clippy::forget_non_drop)]
                     ::std::mem::forget(::std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
