@@ -320,23 +320,18 @@ macro_rules! jump_take_maybe(
 #[macro_export]
 macro_rules! raise(
     (@from $error:ident, $($argument:tt)*) => (
-        return Err(
-            ::typeface::Error::new(
-                ::std::io::ErrorKind::Other,
+        Err(
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
                 ::typeface::ErrorWithSource {
                     description: format!($($argument)*),
                     source: $error,
                 },
             )
-        )
+        )?
     );
     ($($argument:tt)*) => (
-        return Err(
-            ::typeface::Error::new(
-                ::std::io::ErrorKind::Other,
-                format!($($argument)*),
-            )
-        )
+        Err(std::io::Error::new(std::io::ErrorKind::Other, format!($($argument)*)))?
     );
 );
 
