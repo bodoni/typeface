@@ -198,6 +198,25 @@ macro_rules! dereference {
     });
 }
 
+/// Create an error.
+#[macro_export]
+macro_rules! error(
+    (@from $error:ident, $($argument:tt)*) => (
+        Err(
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                $crate::ErrorWithSource {
+                    description: format!($($argument)*),
+                    source: $error,
+                },
+            )
+        )
+    );
+    ($($argument:tt)*) => (
+        Err(std::io::Error::new(std::io::ErrorKind::Other, format!($($argument)*)))
+    );
+);
+
 /// Implement flags.
 #[macro_export]
 macro_rules! flags {
@@ -354,20 +373,7 @@ macro_rules! jump_take_maybe(
 /// Raise an exception.
 #[macro_export]
 macro_rules! raise(
-    (@from $error:ident, $($argument:tt)*) => (
-        Err(
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                $crate::ErrorWithSource {
-                    description: format!($($argument)*),
-                    source: $error,
-                },
-            )
-        )?
-    );
-    ($($argument:tt)*) => (
-        Err(std::io::Error::new(std::io::ErrorKind::Other, format!($($argument)*)))?
-    );
+    ($($argument:tt)*) => ($crate::error!($($argument)*)?);
 );
 
 /// Implement a table.
