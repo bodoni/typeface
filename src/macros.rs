@@ -31,8 +31,8 @@ macro_rules! choices {
             }
         }
 
-        impl ::typeface::Value for $name {
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
                     value => Ok($name::$other(value)),
@@ -58,22 +58,36 @@ macro_rules! choices {
         }
 
         impl TryFrom<$kind> for $name {
-            type Error = ::typeface::Error;
+            type Error = $crate::Error;
 
             #[inline]
-            fn try_from(value: $kind) -> ::typeface::Result<$name> {
+            fn try_from(value: $kind) -> $crate::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
+                    value => $crate::raise!(
+                        concat!(
+                            "found a malformed field of type ",
+                            stringify!($name),
+                            " with value {}",
+                        ),
+                        value,
+                    ),
                 }
             }
         }
 
-        impl ::typeface::Value for $name {
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
+                    value => $crate::raise!(
+                        concat!(
+                            "found a malformed field of type ",
+                            stringify!($name),
+                            " with value {}",
+                        ),
+                        value,
+                    ),
                 }
             }
         }
@@ -105,21 +119,35 @@ macro_rules! choices {
         }
 
         impl TryFrom<$kind> for $name {
-            type Error = ::typeface::Error;
+            type Error = $crate::Error;
 
-            fn try_from(value: $kind) -> ::typeface::Result<$name> {
+            fn try_from(value: $kind) -> $crate::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
+                    value => $crate::raise!(
+                        concat!(
+                            "found a malformed field of type ",
+                            stringify!($name),
+                            " with value {}",
+                        ),
+                        value,
+                    ),
                 }
             }
         }
 
-        impl ::typeface::Value for $name {
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
-                    value => raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value),
+                    value => $crate::raise!(
+                        concat!(
+                            "found a malformed field of type ",
+                            stringify!($name),
+                            " with value {}",
+                        ),
+                        value,
+                    ),
                 }
             }
         }
@@ -133,7 +161,7 @@ macro_rules! dereference {
     ($name:ident::$field:tt => $target:ty) => (dereference! {
         @itemize
 
-        impl ::std::ops::Deref for $name {
+        impl std::ops::Deref for $name {
             type Target = $target;
 
             #[inline]
@@ -142,7 +170,7 @@ macro_rules! dereference {
             }
         }
 
-        impl ::std::ops::DerefMut for $name {
+        impl std::ops::DerefMut for $name {
             #[inline]
             fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.$field
@@ -152,7 +180,7 @@ macro_rules! dereference {
     ($name:ident<$life:tt>::$field:tt => $target:ty) => (dereference! {
         @itemize
 
-        impl<$life> ::std::ops::Deref for $name<$life> {
+        impl<$life> std::ops::Deref for $name<$life> {
             type Target = $target;
 
             #[inline]
@@ -161,7 +189,7 @@ macro_rules! dereference {
             }
         }
 
-        impl<$life> ::std::ops::DerefMut for $name<$life> {
+        impl<$life> std::ops::DerefMut for $name<$life> {
             #[inline]
             fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.$field
@@ -195,16 +223,16 @@ macro_rules! flags {
             )*
         }
 
-        impl ::std::fmt::Debug for $name {
-            fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        impl std::fmt::Debug for $name {
+            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(formatter, concat!(stringify!($name), "({:#b})"), self.0)
             }
         }
 
-        impl ::std::fmt::Display for $name {
+        impl std::fmt::Display for $name {
             #[inline]
-            fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                ::std::fmt::Debug::fmt(self, formatter)
+            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                std::fmt::Debug::fmt(self, formatter)
             }
         }
 
@@ -216,12 +244,19 @@ macro_rules! flags {
         }
     );
     (@read pub $name:ident($kind:ty)) => (
-        impl ::typeface::Value for $name {
+        impl $crate::Value for $name {
             #[inline]
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 let value = $name(tape.take::<$kind>()?);
                 if value.is_invalid() {
-                    raise!(concat!("found a malformed field of type ", stringify!($name), " with value {}"), value);
+                    $crate::raise!(
+                        concat!(
+                            "found a malformed field of type ",
+                            stringify!($name),
+                            " with value {}",
+                        ),
+                        value,
+                    );
                 }
                 Ok(value)
             }
@@ -323,7 +358,7 @@ macro_rules! raise(
         Err(
             std::io::Error::new(
                 std::io::ErrorKind::Other,
-                ::typeface::ErrorWithSource {
+                $crate::ErrorWithSource {
                     description: format!($($argument)*),
                     source: $error,
                 },
@@ -364,14 +399,14 @@ macro_rules! table {
     (@implement pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        impl ::typeface::Value for $name {
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 let mut table: $name = $name::default();
                 $({
                     let value = table!(@read $name, table, tape [] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(clippy::forget_copy)]
-                    ::std::mem::forget(::std::mem::replace(&mut table.$field, value));
+                    std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
             }
@@ -380,15 +415,15 @@ macro_rules! table {
     (@implement @position pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        impl ::typeface::Value for $name {
-            fn read<T: ::typeface::Tape>(tape: &mut T) -> ::typeface::Result<Self> {
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 let position = tape.position()?;
                 let mut table: $name = $name::default();
                 $({
                     let value = table!(@read $name, table, tape [position] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(clippy::forget_copy, clippy::forget_non_drop)]
-                    ::std::mem::forget(::std::mem::replace(&mut table.$field, value));
+                    std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
             }
@@ -401,22 +436,21 @@ macro_rules! table {
      [$value:block]) => ({
         let value = $tape.take()?;
         if value != $value {
-            raise!(concat!("found a malformed table of type ", stringify!($name)));
+            $crate::raise!(concat!("found a malformed table of type ", stringify!($name)));
         }
         value
     });
     (@read $name:ident, $this:ident, $tape:ident [] [$kind:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
         #[inline]
-        fn read<T: ::typeface::Tape>($this_: &$name, $tape_: &mut T)
-                                     -> ::typeface::Result<$kind> $body
+        fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T) -> $crate::Result<$kind> $body
         read(&$this, $tape)?
     });
     (@read $name:ident, $this:ident, $tape:ident [$position:ident] [$kind:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
         #[inline]
-        fn read<T: ::typeface::Tape>($this_: &$name, $tape_: &mut T, $position_: u64)
-                                     -> ::typeface::Result<$kind> $body
+        fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T, $position_: u64)
+                                 -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
 }
