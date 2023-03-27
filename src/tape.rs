@@ -80,7 +80,7 @@ macro_rules! read(
     });
 );
 
-macro_rules! value {
+macro_rules! implement {
     ([$kind:ident; $count:expr], 1) => {
         impl Value for [$kind; $count] {
             #[inline]
@@ -107,17 +107,28 @@ macro_rules! value {
     };
 }
 
-value!(i8, 1);
-value!(u8, 1);
-value!(i16, 2);
-value!(u16, 2);
-value!(i32, 4);
-value!(u32, 4);
-value!(i64, 8);
-value!([u8; 3], 1);
-value!([i8; 4], 1);
-value!([u8; 4], 1);
-value!([u8; 10], 1);
+implement!(i8, 1);
+implement!(u8, 1);
+implement!(i16, 2);
+implement!(u16, 2);
+implement!(i32, 4);
+implement!(u32, 4);
+implement!(i64, 8);
+implement!([u8; 3], 1);
+implement!([i8; 4], 1);
+implement!([u8; 4], 1);
+implement!([u8; 10], 1);
+
+impl<U, V> Value for (U, V)
+where
+    U: Value,
+    V: Value,
+{
+    #[inline]
+    fn read<T: Tape>(tape: &mut T) -> Result<Self> {
+        Ok((tape.take()?, tape.take()?))
+    }
+}
 
 impl<V> Walue<'static> for Vec<V>
 where
