@@ -200,7 +200,7 @@ macro_rules! dereference {
 
 /// Create an error.
 #[macro_export]
-macro_rules! error(
+macro_rules! error {
     (@from $error:ident, $($argument:tt)*) => (
         Err(
             std::io::Error::new(
@@ -215,7 +215,7 @@ macro_rules! error(
     ($($argument:tt)*) => (
         Err(std::io::Error::new(std::io::ErrorKind::Other, format!($($argument)*)))
     );
-);
+}
 
 /// Implement flags.
 #[macro_export]
@@ -285,7 +285,7 @@ macro_rules! flags {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! jump_take(
+macro_rules! jump_take {
     (@unwrap $tape:ident, $position:ident, $offset:expr) => ({
         $tape.jump($position + $offset as u64)?;
         $tape.take()?
@@ -310,11 +310,11 @@ macro_rules! jump_take(
     ($tape:ident, $position:ident, $count:expr, $i:ident => $iterator:expr) => (
         Ok(jump_take!(@unwrap $tape, $position, $count, $i => $iterator))
     );
-);
+}
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! jump_take_given(
+macro_rules! jump_take_given {
     (@unwrap $tape:ident, $position:ident, $offset:expr, $parameter:expr) => ({
         $tape.jump($position + $offset as u64)?;
         $tape.take_given($parameter)?
@@ -337,11 +337,11 @@ macro_rules! jump_take_given(
     ($tape:ident, $position:ident, $count:expr, $offsets:expr, $parameter:expr) => (
         Ok(jump_take_given!(@unwrap $tape, $position, $count, i => $offsets[i], $parameter))
     );
-);
+}
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! jump_take_maybe(
+macro_rules! jump_take_maybe {
     (@unwrap $tape:ident, $position:ident, $offset:expr) => (
         if $offset > 0 {
             $tape.jump($position + $offset as u64)?;
@@ -368,13 +368,13 @@ macro_rules! jump_take_maybe(
     ($tape:ident, $position:ident, $count:expr, $offsets:expr) => (
         Ok(jump_take_maybe!(@unwrap $tape, $position, $count, i => $offsets[i]))
     );
-);
+}
 
 /// Raise an exception.
 #[macro_export]
-macro_rules! raise(
+macro_rules! raise {
     ($($argument:tt)*) => ($crate::error!($($argument)*)?);
-);
+}
 
 /// Implement a table.
 #[macro_export]
@@ -411,7 +411,7 @@ macro_rules! table {
                 $({
                     let value = table!(@read $name, table, tape [] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
-                    #[allow(clippy::forget_copy)]
+                    #[allow(forgetting_copy_types)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
@@ -428,7 +428,7 @@ macro_rules! table {
                 $({
                     let value = table!(@read $name, table, tape [position] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
-                    #[allow(clippy::forget_copy, clippy::forget_non_drop)]
+                    #[allow(forgetting_copy_types, clippy::forget_non_drop)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
@@ -459,4 +459,18 @@ macro_rules! table {
                                  -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
+}
+
+#[cfg(test)]
+mod tests {
+    table! {
+        pub Table {
+            major_version (u16),
+            minor_version (u16),
+
+            records (Vec<u16>) |_, tape| {
+                tape.take_given(0)
+            },
+        }
+    }
 }
