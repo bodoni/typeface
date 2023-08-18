@@ -114,7 +114,6 @@ implement!(u16, 2);
 implement!(i32, 4);
 implement!(u32, 4);
 implement!(i64, 8);
-implement!(u64, 8);
 implement!([u8; 3], 1);
 implement!([i8; 4], 1);
 implement!([u8; 4], 1);
