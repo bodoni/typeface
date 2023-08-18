@@ -71,14 +71,14 @@ pub trait Walue<'l>: Sized {
 
 impl<T: Read + Seek> Tape for T {}
 
-macro_rules! read(
+macro_rules! read {
     ($tape:ident, $size:expr) => (unsafe {
         let mut buffer: [u8; $size] = ::std::mem::zeroed();
         ::std::io::Read::read_exact($tape, &mut buffer)?;
         #[allow(clippy::useless_transmute)]
         ::std::mem::transmute(buffer)
     });
-);
+}
 
 macro_rules! implement {
     ([$kind:ident; $count:expr], 1) => {
