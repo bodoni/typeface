@@ -409,7 +409,7 @@ macro_rules! table {
             fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table, tape [] [$($kind)+] [$($value)*]
+                    let value = table!(@read $name, table.$field, tape [] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(forgetting_copy_types)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
@@ -426,7 +426,7 @@ macro_rules! table {
                 let position = tape.position()?;
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table, tape [position] [$($kind)+] [$($value)*]
+                    let value = table!(@read $name, table.$field, tape [position] [$($kind)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(forgetting_copy_types, clippy::forget_non_drop)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
@@ -435,24 +435,32 @@ macro_rules! table {
             }
         }
     );
-    (@read $name:ident, $this:ident, $tape:ident [$($position:tt)*] [$kind:ty] []) => (
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$kind:ty] []) => (
         $tape.take()?
     );
-    (@read $name:ident, $this:ident, $tape:ident [$($position:tt)*] [$kind:ty]
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$kind:ty]
      [$value:block]) => ({
         let value = $tape.take()?;
         if value != $value {
-            $crate::raise!(concat!("found a malformed table of type ", stringify!($name)));
+            $crate::raise!(
+                concat!(
+                    "found a malformed field ",
+                    stringify!($name), "::", stringify!($field),
+                    " with value {} unequal to {}",
+                ),
+                value,
+                $value,
+            );
         }
         value
     });
-    (@read $name:ident, $this:ident, $tape:ident [] [$kind:ty] []
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [] [$kind:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
         #[inline]
         fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T) -> $crate::Result<$kind> $body
         read(&$this, $tape)?
     });
-    (@read $name:ident, $this:ident, $tape:ident [$position:ident] [$kind:ty] []
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$position:ident] [$kind:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
         #[inline]
         fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T, $position_: u64)
@@ -465,7 +473,7 @@ macro_rules! table {
 mod tests {
     table! {
         pub Table {
-            major_version (u16),
+            major_version (u16) = { 1 },
             minor_version (u16),
 
             records (Vec<u16>) |_, tape| {
