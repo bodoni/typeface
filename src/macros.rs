@@ -68,7 +68,7 @@ macro_rules! choices {
                         concat!(
                             "found a malformed field of type ",
                             stringify!($name),
-                            " with value {}",
+                            " with value {:?}",
                         ),
                         value,
                     ),
@@ -84,7 +84,7 @@ macro_rules! choices {
                         concat!(
                             "found a malformed field of type ",
                             stringify!($name),
-                            " with value {}",
+                            " with value {:?}",
                         ),
                         value,
                     ),
@@ -128,7 +128,7 @@ macro_rules! choices {
                         concat!(
                             "found a malformed field of type ",
                             stringify!($name),
-                            " with value {}",
+                            " with value {:?}",
                         ),
                         value,
                     ),
@@ -144,7 +144,7 @@ macro_rules! choices {
                         concat!(
                             "found a malformed field of type ",
                             stringify!($name),
-                            " with value {}",
+                            " with value {:?}",
                         ),
                         value,
                     ),
@@ -272,7 +272,7 @@ macro_rules! flags {
                         concat!(
                             "found a malformed field of type ",
                             stringify!($name),
-                            " with value {}",
+                            " with value {:?}",
                         ),
                         value,
                     );
@@ -446,7 +446,7 @@ macro_rules! table {
                 concat!(
                     "found a malformed field ",
                     stringify!($name), "::", stringify!($field),
-                    " with value {} unequal to {}",
+                    " with value {:?} unequal to {:?}",
                 ),
                 value,
                 $value,
