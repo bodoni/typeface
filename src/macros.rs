@@ -382,18 +382,40 @@ macro_rules! table {
     ($(#[$attribute:meta])* pub $name:ident {
         $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        table! { @define $(#[$attribute])* pub $name { $($field ($($kind)+),)* } }
         table! {
-            @implement
+            @define
+            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+        }
+        table! {
+            @read
             pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
     (@position $(#[$attribute:meta])* pub $name:ident {
         $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        table! { @define $(#[$attribute])* pub $name { $($field ($($kind)+),)* } }
         table! {
-            @implement @position
+            @define
+            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+        }
+        table! {
+            @read @position
+            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+        }
+    );
+    (@write $(#[$attribute:meta])* pub $name:ident {
+        $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
+    }) => (
+        table! {
+            @define
+            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+        }
+        table! {
+            @read
+            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+        }
+        table! {
+            @write
             pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
@@ -402,7 +424,7 @@ macro_rules! table {
         #[derive(Clone, Debug, Default)]
         pub struct $name { $(pub $field: $kind,)* }
     );
-    (@implement pub $name:ident {
+    (@read pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::Value for $name {
@@ -418,7 +440,7 @@ macro_rules! table {
             }
         }
     );
-    (@implement @position pub $name:ident {
+    (@read @position pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::Value for $name {
@@ -467,6 +489,10 @@ macro_rules! table {
                                  -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
+    (@write pub $name:ident {
+        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+    }) => (
+    );
 }
 
 #[cfg(test)]
