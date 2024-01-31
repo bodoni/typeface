@@ -31,8 +31,8 @@ macro_rules! choices {
             }
         }
 
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+        impl $crate::value::Read for $name {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
                     value => Ok($name::$other(value)),
@@ -76,8 +76,8 @@ macro_rules! choices {
             }
         }
 
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+        impl $crate::value::Read for $name {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
@@ -136,8 +136,8 @@ macro_rules! choices {
             }
         }
 
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+        impl $crate::value::Read for $name {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 match tape.take::<$kind>()? {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
@@ -263,9 +263,9 @@ macro_rules! flags {
         }
     );
     (@read pub $name:ident($kind:ty)) => (
-        impl $crate::Value for $name {
+        impl $crate::value::Read for $name {
             #[inline]
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let value = $name(tape.take::<$kind>()?);
                 if value.is_invalid() {
                     $crate::raise!(
@@ -411,7 +411,7 @@ macro_rules! table {
             $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
         }
         table! {
-            @read @write
+            @read
             pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
@@ -424,8 +424,8 @@ macro_rules! table {
     (@read pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+        impl $crate::value::Read for $name {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let mut table: $name = $name::default();
                 $({
                     let value = table!(@read $name, table.$field, tape [] [$($kind)+] [$($value)*]
@@ -440,8 +440,8 @@ macro_rules! table {
     (@read @position pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+        impl $crate::value::Read for $name {
+            fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let position = tape.position()?;
                 let mut table: $name = $name::default();
                 $({
@@ -451,27 +451,6 @@ macro_rules! table {
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
                 Ok(table)
-            }
-        }
-    );
-    (@read @write pub $name:ident {
-        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
-    }) => (
-        impl $crate::Value for $name {
-            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
-                let mut table: $name = $name::default();
-                $({
-                    let value = table!(@read $name, table.$field, tape [] [$($kind)+] [$($value)*]
-                                       $(|$($argument),+| $body)*);
-                    #[allow(forgetting_copy_types)]
-                    std::mem::forget(std::mem::replace(&mut table.$field, value));
-                })*
-                Ok(table)
-            }
-
-            fn write<T: $crate::Tape>(&self, tape: &mut T) -> $crate::Result<()> {
-                $(table!(@write $name, self.$field, tape);)*
-                Ok(())
             }
         }
     );
@@ -498,25 +477,34 @@ macro_rules! table {
     (@read $name:ident, $this:ident . $field:ident, $tape:ident [] [$kind:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
         #[inline]
-        fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T) -> $crate::Result<$kind> $body
+        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T) -> $crate::Result<$kind> $body
         read(&$this, $tape)?
     });
     (@read $name:ident, $this:ident . $field:ident, $tape:ident [$position:ident] [$kind:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
         #[inline]
-        fn read<T: $crate::Tape>($this_: &$name, $tape_: &mut T, $position_: u64)
+        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T, $position_: u64)
                                  -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
-
-    (@write $name:ident, $this:ident . $field:ident, $tape:ident) => (
-    );
 }
 
 #[cfg(test)]
 mod tests {
     table! {
-        pub Table {
+        pub Read {
+            major_version (u16) = { 1 },
+            minor_version (u16),
+
+            records (Vec<u16>) |_, tape| {
+                tape.take_given(0)
+            },
+        }
+    }
+
+    table! {
+        @write
+        pub Write {
             major_version (u16) = { 1 },
             minor_version (u16),
 
