@@ -39,8 +39,8 @@ macro_rules! implement {
             }
         }
     };
-    ([$kind:ident; $count:expr]) => {
-        impl Read for [$kind; $count] {
+    ([$type:ident; $count:expr]) => {
+        impl Read for [$type; $count] {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
                 let value = read!(tape, $count);
@@ -48,7 +48,7 @@ macro_rules! implement {
             }
         }
 
-        impl Write for [$kind; $count] {
+        impl Write for [$type; $count] {
             #[inline]
             fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
                 let value: [u8; $count] = unsafe { std::mem::transmute(*self) };
@@ -56,15 +56,15 @@ macro_rules! implement {
             }
         }
     };
-    ($kind:ident, $size:expr) => {
-        impl Read for $kind {
+    ($type:ident, $size:expr) => {
+        impl Read for $type {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
-                Ok($kind::from_be_bytes(read!(tape, $size)))
+                Ok($type::from_be_bytes(read!(tape, $size)))
             }
         }
 
-        impl Write for $kind {
+        impl Write for $type {
             #[inline]
             fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
                 let value = self.to_be_bytes();
@@ -86,13 +86,18 @@ implement!([i8; 4]);
 implement!([u8; 4]);
 implement!([u8; 10]);
 
-impl<U, V> Read for (U, V)
-where
-    U: Read,
-    V: Read,
-{
-    #[inline]
-    fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
-        Ok((tape.take()?, tape.take()?))
-    }
+macro_rules! implement {
+    ($($type:ident),*) => {
+        impl<$($type),*> Read for ($($type),*)
+        where
+            $($type: Read,)*
+        {
+            #[inline]
+            fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
+                Ok(($(tape.take::<$type>()?),*))
+            }
+        }
+    };
 }
+
+implement!(U, V);

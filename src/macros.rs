@@ -1,7 +1,7 @@
 /// Implement choices.
 #[macro_export]
 macro_rules! choices {
-    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+    ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
         _ => $other:ident,
     }) => (
@@ -10,11 +10,11 @@ macro_rules! choices {
         pub enum $name {
             #[default]
             $($variant,)*
-            $other($kind),
+            $other($type),
         }
 
-        impl From<$name> for $kind {
-            fn from(value: $name) -> $kind {
+        impl From<$name> for $type {
+            fn from(value: $name) -> $type {
                 match value {
                     $($name::$variant => $value,)*
                     $name::$other(value) => value,
@@ -22,8 +22,8 @@ macro_rules! choices {
             }
         }
 
-        impl From<$kind> for $name {
-            fn from(value: $kind) -> $name {
+        impl From<$type> for $name {
+            fn from(value: $type) -> $name {
                 match value {
                     $($value => $name::$variant,)*
                     value => $name::$other(value),
@@ -33,14 +33,14 @@ macro_rules! choices {
 
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
-                match tape.take::<$kind>()? {
+                match tape.take::<$type>()? {
                     $($value => Ok($name::$variant),)*
                     value => Ok($name::$other(value)),
                 }
             }
         }
     );
-    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+    ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
         $(#[$attribute])*
@@ -50,18 +50,18 @@ macro_rules! choices {
             $($variant = $value,)*
         }
 
-        impl From<$name> for $kind {
+        impl From<$name> for $type {
             #[inline]
-            fn from(value: $name) -> $kind {
-                value as $kind
+            fn from(value: $name) -> $type {
+                value as $type
             }
         }
 
-        impl TryFrom<$kind> for $name {
+        impl TryFrom<$type> for $name {
             type Error = $crate::Error;
 
             #[inline]
-            fn try_from(value: $kind) -> $crate::Result<$name> {
+            fn try_from(value: $type) -> $crate::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
@@ -78,7 +78,7 @@ macro_rules! choices {
 
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
-                match tape.take::<$kind>()? {
+                match tape.take::<$type>()? {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
                         concat!(
@@ -92,7 +92,7 @@ macro_rules! choices {
             }
         }
     );
-    ($(#[$attribute:meta])* pub $name:ident($kind:tt) {
+    ($(#[$attribute:meta])* pub $name:ident($type:tt) {
         $($value:expr => $variant:ident($string:expr),)*
     }) => (
         $(#[$attribute])*
@@ -102,10 +102,10 @@ macro_rules! choices {
             $($variant = $value,)*
         }
 
-        impl From<$name> for $kind {
+        impl From<$name> for $type {
             #[inline]
             fn from(value: $name) -> Self {
-                value as $kind
+                value as $type
             }
         }
 
@@ -118,10 +118,10 @@ macro_rules! choices {
             }
         }
 
-        impl TryFrom<$kind> for $name {
+        impl TryFrom<$type> for $name {
             type Error = $crate::Error;
 
-            fn try_from(value: $kind) -> $crate::Result<$name> {
+            fn try_from(value: $type) -> $crate::Result<$name> {
                 match value {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
@@ -138,7 +138,7 @@ macro_rules! choices {
 
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
-                match tape.take::<$kind>()? {
+                match tape.take::<$type>()? {
                     $($value => Ok($name::$variant),)*
                     value => $crate::raise!(
                         concat!(
@@ -220,18 +220,18 @@ macro_rules! error {
 /// Implement flags.
 #[macro_export]
 macro_rules! flags {
-    ($(#[$attribute:meta])* pub $name:ident($kind:ty) {
+    ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
-        flags!(@base $(#[$attribute])* pub $name($kind) { $($value => $variant,)* });
-        flags!(@read pub $name($kind));
+        flags!(@base $(#[$attribute])* pub $name($type) { $($value => $variant,)* });
+        flags!(@read pub $name($type));
     );
-    (@base $(#[$attribute:meta])* pub $name:ident($kind:ty) {
+    (@base $(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
         $(#[$attribute])*
         #[derive(Clone, Copy, Default, Eq, PartialEq)]
-        pub struct $name(pub $kind);
+        pub struct $name(pub $type);
 
         impl $name {
             $(
@@ -255,18 +255,18 @@ macro_rules! flags {
             }
         }
 
-        impl From<$name> for $kind {
+        impl From<$name> for $type {
             #[inline]
-            fn from(flags: $name) -> $kind {
+            fn from(flags: $name) -> $type {
                 flags.0
             }
         }
     );
-    (@read pub $name:ident($kind:ty)) => (
+    (@read pub $name:ident($type:ty)) => (
         impl $crate::value::Read for $name {
             #[inline]
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
-                let value = $name(tape.take::<$kind>()?);
+                let value = $name(tape.take::<$type>()?);
                 if value.is_invalid() {
                     $crate::raise!(
                         concat!(
@@ -380,59 +380,59 @@ macro_rules! raise {
 #[macro_export]
 macro_rules! table {
     ($(#[$attribute:meta])* pub $name:ident {
-        $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($($type:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         table! {
             @define
-            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+            $(#[$attribute])* pub $name { $($field ($($type)+),)* }
         }
         table! {
             @read
-            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+            pub $name { $($field ($($type)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
     (@position $(#[$attribute:meta])* pub $name:ident {
-        $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($($type:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         table! {
             @define
-            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+            $(#[$attribute])* pub $name { $($field ($($type)+),)* }
         }
         table! {
             @read @position
-            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+            pub $name { $($field ($($type)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
     (@write $(#[$attribute:meta])* pub $name:ident {
-        $($field:ident ($($kind:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($($type:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         table! {
             @define
-            $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
+            $(#[$attribute])* pub $name { $($field ($($type)+),)* }
         }
         table! {
             @read
-            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+            pub $name { $($field ($($type)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
         table! {
             @write
-            pub $name { $($field ($($kind)+) [],)* }
+            pub $name { $($field ($($type)+) [],)* }
         }
     );
-    (@define $(#[$attribute:meta])* pub $name:ident { $($field:ident ($kind:ty),)* }) => (
+    (@define $(#[$attribute:meta])* pub $name:ident { $($field:ident ($type:ty),)* }) => (
         $(#[$attribute])*
         #[derive(Clone, Debug, Default)]
-        pub struct $name { $(pub $field: $kind,)* }
+        pub struct $name { $(pub $field: $type,)* }
     );
 
     (@read pub $name:ident {
-        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($($type:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table.$field, tape [] [$($kind)+] [$($value)*]
+                    let value = table!(@read $name, table.$field, tape [] [$($type)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(forgetting_copy_types)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
@@ -442,14 +442,14 @@ macro_rules! table {
         }
     );
     (@read @position pub $name:ident {
-        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($($type:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let position = tape.position()?;
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table.$field, tape [position] [$($kind)+] [$($value)*]
+                    let value = table!(@read $name, table.$field, tape [position] [$($type)+] [$($value)*]
                                        $(|$($argument),+| $body)*);
                     #[allow(forgetting_copy_types, clippy::forget_non_drop)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
@@ -459,10 +459,10 @@ macro_rules! table {
         }
     );
 
-    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$kind:ty] []) => (
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$type:ty] []) => (
         $tape.take()?
     );
-    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$kind:ty]
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$type:ty]
      [$value:block]) => ({
         let value = $tape.take()?;
         if value != $value {
@@ -478,22 +478,22 @@ macro_rules! table {
         }
         value
     });
-    (@read $name:ident, $this:ident . $field:ident, $tape:ident [] [$kind:ty] []
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [] [$type:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
         #[inline]
-        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T) -> $crate::Result<$kind> $body
+        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T) -> $crate::Result<$type> $body
         read(&$this, $tape)?
     });
-    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$position:ident] [$kind:ty] []
+    (@read $name:ident, $this:ident . $field:ident, $tape:ident [$position:ident] [$type:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
         #[inline]
         fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T, $position_: u64)
-                                 -> $crate::Result<$kind> $body
+                                 -> $crate::Result<$type> $body
         read(&$this, $tape, $position)?
     });
 
     (@write pub $name:ident {
-        $($field:ident ($($kind:tt)+) [],)*
+        $($field:ident ($($type:tt)+) [],)*
     }) => (
         impl $crate::value::Write for $name {
             fn write<T: $crate::tape::Write>(&self, _: &mut T) -> $crate::Result<()> {
