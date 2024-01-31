@@ -251,10 +251,11 @@ macro_rules! flags {
     ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
-        flags!(@base $(#[$attribute])* pub $name($type) { $($value => $variant,)* });
+        flags!(@define $(#[$attribute])* pub $name($type) { $($value => $variant,)* });
         flags!(@read pub $name($type));
+        flags!(@write pub $name($type));
     );
-    (@base $(#[$attribute:meta])* pub $name:ident($type:ty) {
+    (@define $(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
     }) => (
         $(#[$attribute])*
@@ -292,7 +293,6 @@ macro_rules! flags {
     );
     (@read pub $name:ident($type:ty)) => (
         impl $crate::value::Read for $name {
-            #[inline]
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let value = $name(tape.take::<$type>()?);
                 if value.is_invalid() {
@@ -306,6 +306,14 @@ macro_rules! flags {
                     );
                 }
                 Ok(value)
+            }
+        }
+    );
+    (@write pub $name:ident($type:ty)) => (
+        impl $crate::value::Write for $name {
+            #[inline]
+            fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
+                tape.give(&self.0)
             }
         }
     );
