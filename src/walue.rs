@@ -11,6 +11,15 @@ pub trait Read<'l>: Sized {
     fn read<T: crate::tape::Read>(_: &mut T, _: Self::Parameter) -> Result<Self>;
 }
 
+/// A type that can be written given a parameter.
+pub trait Write<'l>: Sized {
+    /// The parameter type.
+    type Parameter;
+
+    /// Write the value.
+    fn write<T: crate::tape::Write>(&self, _: &mut T, _: Self::Parameter) -> Result<()>;
+}
+
 impl<V> Read<'static> for Vec<V>
 where
     V: crate::value::Read,
