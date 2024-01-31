@@ -15,30 +15,28 @@ pub trait Write: Sized {
 }
 
 macro_rules! read {
-    ($tape:ident, $size:expr) => {
-        unsafe {
-            let mut buffer: [u8; $size] = std::mem::zeroed();
-            std::io::Read::read_exact($tape, &mut buffer)?;
-            #[allow(clippy::useless_transmute)]
-            std::mem::transmute(buffer)
-        }
-    };
+    ($tape:ident, $size:expr) => {{
+        let mut buffer: [u8; $size] = unsafe { std::mem::zeroed() };
+        std::io::Read::read_exact($tape, &mut buffer)?;
+        buffer
+    }};
 }
 
 macro_rules! implement {
-    ([$kind:ident; $count:expr], 1) => {
-        impl Read for [$kind; $count] {
+    ([u8; $count:expr]) => {
+        impl Read for [u8; $count] {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
                 Ok(read!(tape, $count))
             }
         }
     };
-    ($kind:ident, 1) => {
-        impl Read for $kind {
+    ([$kind:ident; $count:expr]) => {
+        impl Read for [$kind; $count] {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
-                Ok(read!(tape, 1))
+                let value = read!(tape, $count);
+                Ok(unsafe { std::mem::transmute(value) })
             }
         }
     };
@@ -46,7 +44,7 @@ macro_rules! implement {
         impl Read for $kind {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
-                Ok($kind::from_be(read!(tape, $size)))
+                Ok($kind::from_be_bytes(read!(tape, $size)))
             }
         }
     };
@@ -59,10 +57,10 @@ implement!(u16, 2);
 implement!(i32, 4);
 implement!(u32, 4);
 implement!(i64, 8);
-implement!([u8; 3], 1);
-implement!([i8; 4], 1);
-implement!([u8; 4], 1);
-implement!([u8; 10], 1);
+implement!([u8; 3]);
+implement!([i8; 4]);
+implement!([u8; 4]);
+implement!([u8; 10]);
 
 impl<U, V> Read for (U, V)
 where
