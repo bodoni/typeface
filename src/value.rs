@@ -16,9 +16,10 @@ pub trait Write: Sized {
 
 macro_rules! read {
     ($tape:ident, $size:expr) => {{
-        let mut buffer: [u8; $size] = unsafe { std::mem::zeroed() };
-        std::io::Read::read_exact($tape, &mut buffer)?;
-        buffer
+        let mut maybe = std::mem::MaybeUninit::<[u8; $size]>::uninit();
+        let buffer = unsafe { &mut *maybe.as_mut_ptr() };
+        std::io::Read::read_exact($tape, buffer)?;
+        unsafe { maybe.assume_init() }
     }};
 }
 
