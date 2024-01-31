@@ -1,6 +1,6 @@
 # Typeface [![Package][package-img]][package-url] [![Documentation][documentation-img]][documentation-url] [![Build][build-img]][build-url]
 
-The package provide a foundation for parsing fonts. It is used in
+The package provide a foundation for building and parsing fonts. It is used in
 [`opentype`][opentype], [`postscript`][postscript], and [`truetype`][truetype].
 
 ## Contribution

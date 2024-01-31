@@ -1,4 +1,4 @@
-//! Foundation for parsing fonts.
+//! Foundation for building and parsing fonts.
 
 #[macro_use]
 mod macros;
