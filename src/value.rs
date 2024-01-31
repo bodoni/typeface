@@ -31,6 +31,13 @@ macro_rules! implement {
                 Ok(read!(tape, $count))
             }
         }
+
+        impl Write for [u8; $count] {
+            #[inline]
+            fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
+                tape.write_all(self)
+            }
+        }
     };
     ([$kind:ident; $count:expr]) => {
         impl Read for [$kind; $count] {
@@ -40,12 +47,28 @@ macro_rules! implement {
                 Ok(unsafe { std::mem::transmute(value) })
             }
         }
+
+        impl Write for [$kind; $count] {
+            #[inline]
+            fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
+                let value: [u8; $count] = unsafe { std::mem::transmute(*self) };
+                value.write(tape)
+            }
+        }
     };
     ($kind:ident, $size:expr) => {
         impl Read for $kind {
             #[inline]
             fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
                 Ok($kind::from_be_bytes(read!(tape, $size)))
+            }
+        }
+
+        impl Write for $kind {
+            #[inline]
+            fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
+                let value = self.to_be_bytes();
+                tape.write_all(&value)
             }
         }
     };
