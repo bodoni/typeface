@@ -496,13 +496,14 @@ macro_rules! table {
         $($field:ident ($($type:tt)+) [],)*
     }) => (
         impl $crate::value::Write for $name {
-            fn write<T: $crate::tape::Write>(&self, _: &mut T) -> $crate::Result<()> {
-                $(table!(@write $name, table.$field, tape);)*
+            fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
+                $(table!(@write $name, self.$field, tape);)*
                 Ok(())
             }
         }
     );
     (@write $name:ident, $this:ident . $field:ident, $tape:ident) => (
+        $tape.give(&$this.$field)?;
     );
 }
 
