@@ -12,7 +12,7 @@ pub trait Read<'l>: Sized {
 }
 
 /// A type that can be written given a parameter.
-pub trait Write<'l>: Sized {
+pub trait Write<'l> {
     /// The parameter type.
     type Parameter;
 

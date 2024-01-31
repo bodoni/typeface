@@ -9,7 +9,7 @@ pub trait Read: Sized {
 }
 
 /// A type that can be written.
-pub trait Write: Sized {
+pub trait Write {
     /// Write the value.
     fn write<T: crate::tape::Write>(&self, _: &mut T) -> Result<()>;
 }
@@ -101,3 +101,12 @@ macro_rules! implement {
 }
 
 implement!(U, V);
+
+impl<U: Write> Write for [U] {
+    fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
+        for value in self.iter() {
+            tape.give(value)?;
+        }
+        Ok(())
+    }
+}

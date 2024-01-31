@@ -111,7 +111,7 @@ macro_rules! choices {
             }
         }
     );
-    ($(#[$attribute:meta])* pub $name:ident($type:tt) {
+    ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident($string:expr),)*
     }) => (
         $(#[$attribute])*
@@ -462,14 +462,16 @@ macro_rules! table {
     );
 
     (@read pub $name:ident {
-        $($field:ident ($($type:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($type:ty) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table.$field, tape [] [$($type)+] [$($value)*]
-                                       $(|$($argument),+| $body)*);
+                    let value = table!(
+                        @read $name, table.$field, tape [] [$type] [$($value)*]
+                        $(|$($argument),+| $body)*
+                    );
                     #[allow(forgetting_copy_types)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
@@ -478,15 +480,17 @@ macro_rules! table {
         }
     );
     (@read @position pub $name:ident {
-        $($field:ident ($($type:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+        $($field:ident ($type:ty) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
         impl $crate::value::Read for $name {
             fn read<T: $crate::tape::Read>(tape: &mut T) -> $crate::Result<Self> {
                 let position = tape.position()?;
                 let mut table: $name = $name::default();
                 $({
-                    let value = table!(@read $name, table.$field, tape [position] [$($type)+] [$($value)*]
-                                       $(|$($argument),+| $body)*);
+                    let value = table!(
+                        @read $name, table.$field, tape [position] [$type] [$($value)*]
+                        $(|$($argument),+| $body)*
+                    );
                     #[allow(forgetting_copy_types, clippy::forget_non_drop)]
                     std::mem::forget(std::mem::replace(&mut table.$field, value));
                 })*
@@ -517,14 +521,20 @@ macro_rules! table {
     (@read $name:ident, $this:ident . $field:ident, $tape:ident [] [$type:ty] []
      |$this_:tt, $tape_:tt| $body:block) => ({
         #[inline]
-        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T) -> $crate::Result<$type> $body
+        fn read<T: $crate::tape::Read>(
+            $this_: &$name,
+            $tape_: &mut T,
+        ) -> $crate::Result<$type> $body
         read(&$this, $tape)?
     });
     (@read $name:ident, $this:ident . $field:ident, $tape:ident [$position:ident] [$type:ty] []
      |$this_:tt, $tape_:tt, $position_:tt| $body:block) => ({
         #[inline]
-        fn read<T: $crate::tape::Read>($this_: &$name, $tape_: &mut T, $position_: u64)
-                                 -> $crate::Result<$type> $body
+        fn read<T: $crate::tape::Read>(
+            $this_: &$name,
+            $tape_: &mut T,
+            $position_: u64,
+        ) -> $crate::Result<$type> $body
         read(&$this, $tape, $position)?
     });
 
@@ -533,12 +543,18 @@ macro_rules! table {
     }) => (
         impl $crate::value::Write for $name {
             fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
-                $(table!(@write $name, self.$field, tape);)*
+                $(table!(@write $name, self.$field, tape [] [$($type)+]);)*
                 Ok(())
             }
         }
     );
-    (@write $name:ident, $this:ident . $field:ident, $tape:ident) => (
+    (@write $name:ident, $this:ident . $field:ident, $tape:ident [] [Vec<u8>]) => (
+        $tape.give_bytes(&*$this.$field)?;
+    );
+    (@write $name:ident, $this:ident . $field:ident, $tape:ident [] [Vec<$type:ty>]) => (
+        $tape.give(&*$this.$field)?;
+    );
+    (@write $name:ident, $this:ident . $field:ident, $tape:ident [] [$type:ty]) => (
         $tape.give(&$this.$field)?;
     );
 }
@@ -546,21 +562,18 @@ macro_rules! table {
 #[cfg(test)]
 mod tests {
     table! {
-        pub Read {
+        @write
+        pub Table {
             major_version (u16) = { 1 },
             minor_version (u16),
 
             records (Vec<u16>) |_, tape| {
                 tape.take_given(0)
             },
-        }
-    }
 
-    table! {
-        @write
-        pub Write {
-            major_version (u16),
-            minor_version (u16),
+            data (Vec<u8>) |_, tape| {
+                tape.take_given(0)
+            },
         }
     }
 }

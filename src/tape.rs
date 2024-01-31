@@ -58,8 +58,14 @@ pub trait Read: std::io::Read + std::io::Seek + Sized {
 pub trait Write: std::io::Write + Sized {
     /// Write a value.
     #[inline]
-    fn give<T: crate::value::Write>(&mut self, value: &T) -> Result<()> {
+    fn give<T: crate::value::Write + ?Sized>(&mut self, value: &T) -> Result<()> {
         crate::value::Write::write(value, self)
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    fn give_bytes(&mut self, value: &[u8]) -> Result<()> {
+        self.write_all(value)
     }
 }
 
