@@ -39,6 +39,16 @@ macro_rules! choices {
                 }
             }
         }
+
+        impl $crate::value::Write for $name {
+            fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
+                let value: $type = match self {
+                    $($name::$variant => $value,)*
+                    $name::$other(value) => *value,
+                };
+                tape.give(&value)
+            }
+        }
     );
     ($(#[$attribute:meta])* pub $name:ident($type:ty) {
         $($value:expr => $variant:ident,)*
@@ -89,6 +99,15 @@ macro_rules! choices {
                         value,
                     ),
                 }
+            }
+        }
+
+        impl $crate::value::Write for $name {
+            fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
+                let value: $type = match self {
+                    $($name::$variant => $value,)*
+                };
+                tape.give(&value)
             }
         }
     );
@@ -149,6 +168,15 @@ macro_rules! choices {
                         value,
                     ),
                 }
+            }
+        }
+
+        impl $crate::value::Write for $name {
+            fn write<T: $crate::tape::Write>(&self, tape: &mut T) -> $crate::Result<()> {
+                let value: $type = match self {
+                    $($name::$variant => $value,)*
+                };
+                tape.give(&value)
             }
         }
     );
