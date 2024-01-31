@@ -54,4 +54,15 @@ pub trait Read: std::io::Read + std::io::Seek + Sized {
     }
 }
 
+/// A type that can write.
+pub trait Write: std::io::Write + Sized {
+    /// Write a value.
+    #[inline]
+    fn give<T: crate::value::Write>(&mut self, value: &T) -> Result<()> {
+        crate::value::Write::write(value, self)
+    }
+}
+
 impl<T: std::io::Read + std::io::Seek> Read for T {}
+
+impl<T: std::io::Write> Write for T {}

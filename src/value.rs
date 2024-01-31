@@ -8,6 +8,12 @@ pub trait Read: Sized {
     fn read<T: crate::tape::Read>(_: &mut T) -> Result<Self>;
 }
 
+/// A type that can be written.
+pub trait Write: Sized {
+    /// Write the value.
+    fn write<T: crate::tape::Write>(&self, _: &mut T) -> Result<()>;
+}
+
 macro_rules! read {
     ($tape:ident, $size:expr) => {
         unsafe {

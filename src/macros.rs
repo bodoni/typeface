@@ -414,6 +414,10 @@ macro_rules! table {
             @read
             pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
+        table! {
+            @write
+            pub $name { $($field ($($kind)+) [],)* }
+        }
     );
     (@define $(#[$attribute:meta])* pub $name:ident { $($field:ident ($kind:ty),)* }) => (
         $(#[$attribute])*
@@ -487,6 +491,19 @@ macro_rules! table {
                                  -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
+
+    (@write pub $name:ident {
+        $($field:ident ($($kind:tt)+) [],)*
+    }) => (
+        impl $crate::value::Write for $name {
+            fn write<T: $crate::tape::Write>(&self, _: &mut T) -> $crate::Result<()> {
+                $(table!(@write $name, table.$field, tape);)*
+                Ok(())
+            }
+        }
+    );
+    (@write $name:ident, $this:ident . $field:ident, $tape:ident) => (
+    );
 }
 
 #[cfg(test)]
@@ -505,12 +522,8 @@ mod tests {
     table! {
         @write
         pub Write {
-            major_version (u16) = { 1 },
+            major_version (u16),
             minor_version (u16),
-
-            records (Vec<u16>) |_, tape| {
-                tape.take_given(0)
-            },
         }
     }
 }
