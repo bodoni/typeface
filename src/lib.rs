@@ -3,8 +3,12 @@
 #[macro_use]
 mod macros;
 mod tape;
+mod value;
+mod walue;
 
-pub use tape::{Tape, Value, Walue};
+pub use tape::Tape;
+pub use value::Value;
+pub use walue::Walue;
 
 /// An error.
 pub type Error = std::io::Error;

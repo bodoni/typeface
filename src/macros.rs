@@ -411,11 +411,7 @@ macro_rules! table {
             $(#[$attribute])* pub $name { $($field ($($kind)+),)* }
         }
         table! {
-            @read
-            pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
-        }
-        table! {
-            @write
+            @read @write
             pub $name { $($field ($($kind)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
@@ -424,6 +420,7 @@ macro_rules! table {
         #[derive(Clone, Debug, Default)]
         pub struct $name { $(pub $field: $kind,)* }
     );
+
     (@read pub $name:ident {
         $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
     }) => (
@@ -457,6 +454,28 @@ macro_rules! table {
             }
         }
     );
+    (@read @write pub $name:ident {
+        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
+    }) => (
+        impl $crate::Value for $name {
+            fn read<T: $crate::Tape>(tape: &mut T) -> $crate::Result<Self> {
+                let mut table: $name = $name::default();
+                $({
+                    let value = table!(@read $name, table.$field, tape [] [$($kind)+] [$($value)*]
+                                       $(|$($argument),+| $body)*);
+                    #[allow(forgetting_copy_types)]
+                    std::mem::forget(std::mem::replace(&mut table.$field, value));
+                })*
+                Ok(table)
+            }
+
+            fn write<T: $crate::Tape>(&self, tape: &mut T) -> $crate::Result<()> {
+                $(table!(@write $name, self.$field, tape);)*
+                Ok(())
+            }
+        }
+    );
+
     (@read $name:ident, $this:ident . $field:ident, $tape:ident [$($position:tt)*] [$kind:ty] []) => (
         $tape.take()?
     );
@@ -489,9 +508,8 @@ macro_rules! table {
                                  -> $crate::Result<$kind> $body
         read(&$this, $tape, $position)?
     });
-    (@write pub $name:ident {
-        $($field:ident ($($kind:tt)+) [$($value:block)*] $(|$($argument:tt),+| $body:block)*,)*
-    }) => (
+
+    (@write $name:ident, $this:ident . $field:ident, $tape:ident) => (
     );
 }
 
