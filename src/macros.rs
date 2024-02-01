@@ -578,8 +578,56 @@ macro_rules! table {
 #[cfg(test)]
 mod tests {
     table! {
+        pub Read {
+            major_version (u16) = { 1 },
+            minor_version (u16),
+
+            records (Vec<u16>) |_, tape| {
+                tape.take_given(0)
+            },
+
+            data (Vec<u8>) |_, tape| {
+                tape.take_given(0)
+            },
+        }
+    }
+
+    table! {
+        @position
+        pub ReadWithPosition {
+            major_version (u16) = { 1 },
+            minor_version (u16),
+
+            records (Vec<u16>) |_, tape, _| {
+                tape.take_given(0)
+            },
+
+            data (Vec<u8>) |_, tape, _| {
+                tape.take_given(0)
+            },
+        }
+    }
+
+    table! {
+        @position
         @write
-        pub Table {
+        pub ReadWithPositionAndWrite {
+            major_version (u16) = { 1 },
+            minor_version (u16),
+
+            records (Vec<u16>) |_, tape, _| {
+                tape.take_given(0)
+            },
+
+            data (Vec<u8>) |_, tape, _| {
+                tape.take_given(0)
+            },
+        }
+    }
+
+    table! {
+        @write
+        pub ReadAndWrite {
             major_version (u16) = { 1 },
             minor_version (u16),
 
