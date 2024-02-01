@@ -439,6 +439,22 @@ macro_rules! table {
             pub $name { $($field ($($type)+) [$($value)*] $(|$($argument),+| $body)*,)* }
         }
     );
+    (@position @write $(#[$attribute:meta])* pub $name:ident {
+        $($field:ident ($($type:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
+    }) => (
+        table! {
+            @define
+            $(#[$attribute])* pub $name { $($field ($($type)+),)* }
+        }
+        table! {
+            @read @position
+            pub $name { $($field ($($type)+) [$($value)*] $(|$($argument),+| $body)*,)* }
+        }
+        table! {
+            @write
+            pub $name { $($field ($($type)+) [],)* }
+        }
+    );
     (@write $(#[$attribute:meta])* pub $name:ident {
         $($field:ident ($($type:tt)+) $(= $value:block)* $(|$($argument:tt),+| $body:block)*,)*
     }) => (
