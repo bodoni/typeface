@@ -16,14 +16,34 @@ pub trait Write {
 
 macro_rules! read {
     ($tape:ident, $size:expr) => {{
-        let mut maybe = std::mem::MaybeUninit::<[u8; $size]>::uninit();
-        let buffer = unsafe { &mut *maybe.as_mut_ptr() };
-        std::io::Read::read_exact($tape, buffer)?;
-        unsafe { maybe.assume_init() }
+        let mut buffer: [u8; $size] = [0; $size];
+        std::io::Read::read_exact($tape, &mut buffer)?;
+        buffer
     }};
 }
 
 macro_rules! implement {
+    ([i8; 4]) => {
+        impl Read for [i8; 4] {
+            #[inline]
+            fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
+                let value = read!(tape, 4);
+                Ok([
+                    value[0] as i8,
+                    value[1] as i8,
+                    value[2] as i8,
+                    value[3] as i8,
+                ])
+            }
+        }
+
+        impl Write for [i8; 4] {
+            #[inline]
+            fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
+                tape.give(&[self[0] as u8, self[1] as u8, self[2] as u8, self[3] as u8])
+            }
+        }
+    };
     ([u8; $count:expr]) => {
         impl Read for [u8; $count] {
             #[inline]
@@ -36,23 +56,6 @@ macro_rules! implement {
             #[inline]
             fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
                 tape.write_all(self)
-            }
-        }
-    };
-    ([$type:ident; $count:expr]) => {
-        impl Read for [$type; $count] {
-            #[inline]
-            fn read<T: crate::tape::Read>(tape: &mut T) -> Result<Self> {
-                let value = read!(tape, $count);
-                Ok(unsafe { std::mem::transmute(value) })
-            }
-        }
-
-        impl Write for [$type; $count] {
-            #[inline]
-            fn write<T: crate::tape::Write>(&self, tape: &mut T) -> Result<()> {
-                let value: [u8; $count] = unsafe { std::mem::transmute(*self) };
-                value.write(tape)
             }
         }
     };
@@ -79,10 +82,10 @@ implement!(u8, 1);
 implement!(i16, 2);
 implement!(u16, 2);
 implement!(i32, 4);
-implement!(u32, 4);
 implement!(i64, 8);
-implement!([u8; 3]);
+implement!(u32, 4);
 implement!([i8; 4]);
+implement!([u8; 3]);
 implement!([u8; 4]);
 implement!([u8; 10]);
 
