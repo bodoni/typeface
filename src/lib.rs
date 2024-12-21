@@ -7,6 +7,10 @@ pub mod tape;
 pub mod value;
 pub mod walue;
 
+mod number;
+
+pub use number::{q16, q32};
+
 /// An error.
 pub type Error = std::io::Error;
 
